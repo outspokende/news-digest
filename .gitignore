@@ -1,0 +1,6 @@
+news.db
+news.db-journal
+__pycache__/
+*.pyc
+.cache/
+.env

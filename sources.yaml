@@ -1,0 +1,131 @@
+# AI-News-Digest Quellen
+# Topic-Tags: agent | llm | stt_tts | audio | research | industry
+# Letzter Live-Test: 2026-08-13, alle 22 Quellen mit HTTP-200 verifiziert
+# wo nicht: Quelle auskommentiert mit # DEAD
+
+sources:
+
+  # === Coding-Agents / IDE / Dev-Tools ===
+  - name: Simon Willison's Weblog
+    url: https://simonwillison.net/atom/everything/
+    topics: [agent, llm]
+    note: Pflichtlektüre — Deckt Coding-Agents, LLMs, neue Releases.
+
+  - name: Hugging Face Blog
+    url: https://huggingface.co/blog/feed.xml
+    topics: [llm, agent, research]
+    note: Model-Releases, Open-Source-LLMs, Fine-Tuning-Recipes.
+
+  # DEAD: Cursor hat keinen RSS-Feed mehr (404)
+  # - name: Cursor Blog
+  #   url: https://cursor.com/blog/rss.xml
+
+  - name: Aider Blog
+    url: https://aider.chat/feed.xml
+    topics: [agent]
+    note: OSS-Coding-Agent.
+
+  - name: GitHub Blog (Engineering)
+    url: https://github.blog/engineering/feed/
+    topics: [agent, industry]
+    note: GitHub Copilot, Actions, Dev-Infrastructure.
+
+  # === LLM-Forschung / Releases ===
+  - name: OpenAI Blog
+    url: https://openai.com/blog/rss.xml
+    topics: [llm, research, industry]
+    note: Offizielle Release-Notes.
+
+  # DEAD: Anthropic hat keinen oeffentlichen RSS-Feed mehr (404)
+  # Ersatz: Anthropic-News werden via @AnthropicAI auf X getrackt — wir kippen das spaeter in
+  # Modul 2 (LLM-Filter auf Lobsters/HN). Bis dahin: AnthropicAI Substack-Mirror pruefen.
+  # - name: Anthropic Blog
+  #   url: https://www.anthropic.com/news/rss.xml
+
+  - name: Google DeepMind Blog
+    url: https://deepmind.google/blog/rss.xml
+    topics: [llm, research]
+    note: Gemini, Research-Papers.
+
+  - name: Lilian Weng (lilianweng.github.io)
+    url: https://lilianweng.github.io/index.xml
+    topics: [llm, research]
+    note: Tiefenanalyse-Posts zu LLMs/Agents.
+
+  - name: Sebastian Raschka (Substack)
+    url: https://magazine.sebastianraschka.com/feed
+    topics: [llm, research]
+    note: LLM-Benchmarks, Model-Analysen (Original-Feed kaputt; Substack-Mirror aktiv).
+
+  - name: The Gradient
+    url: https://thegradient.pub/rss/
+    topics: [llm, research]
+    note: Long-Form-AI-Essays.
+
+  # DEAD: Meta AI hat keinen RSS-Feed mehr
+  # - name: Meta AI Blog
+  #   url: https://ai.meta.com/blog/rss/
+
+  - name: Mistral AI Blog
+    url: https://mistral.ai/news/rss
+    topics: [llm]
+    note: Open-Weight-Models.
+
+  # === STT / TTS / Voice ===
+  # DEAD: ElevenLabs hat keinen RSS-Feed mehr (404)
+  # - name: ElevenLabs Blog
+  #   url: https://elevenlabs.io/blog/rss.xml
+
+  # DEAD: Replicate hat keinen RSS-Feed mehr (404)
+  # - name: Replicate Blog
+  #   url: https://replicate.com/blog/rss.xml
+
+  # === Communities / Newsletter / Aggregatoren ===
+  - name: Hacker News (Top 100+)
+    url: https://hnrss.org/frontpage?points=100
+    topics: [industry, llm, agent]
+    note: Nur Posts mit >=100 Punkten — verhindert Noise.
+
+  - name: Lobsters (AI tag)
+    url: https://lobste.rs/t/ai.rss
+    topics: [llm, agent, industry]
+    note: Hochwertige Tech-Community, AI-tag-only.
+
+  - name: Ben's Bites Daily
+    url: https://www.bensbites.com/feed
+    topics: [llm, agent, industry]
+    note: Täglicher kuratierter AI-Newsletter.
+
+  - name: The Decoder
+    url: https://the-decoder.com/feed/
+    topics: [llm, agent, industry, stt_tts]
+    note: Deutsche AI-Redaktion, breite Themenabdeckung.
+
+  - name: Import AI (Jack Clark)
+    url: https://importai.substack.com/feed
+    topics: [llm, research, industry, agent]
+    note: Wöchentlicher Tiefen-Newsletter.
+
+  # DEAD: Reddit blockiert alle .rss-Endpoints (403)
+  # - name: r/MachineLearning
+  # - name: r/LocalLLaMA
+  # - name: r/ClaudeAI
+
+  # === arXiv cs.CL (LLMs/Agents) ===
+  - name: arXiv cs.CL (recent)
+    url: https://export.arxiv.org/rss/cs.CL
+    topics: [llm, research]
+    note: Viele Items — Filter auf Titel-Keywords im Schritt 2.
+
+  # === Industry / Policy ===
+  - name: TechCrunch AI
+    url: https://techcrunch.com/category/artificial-intelligence/feed/
+    topics: [industry]
+    note: Branchen-News, Funding, Policy.
+
+# Einstellungen
+settings:
+  max_age_days: 3          # Artikel älter → verwerfen
+  max_items_per_feed: 20   # Cap pro Feed (verhindert arXiv-Flut)
+  user_agent: "Mozilla/5.0 (X11; Linux x86_64) NewsDigestBot/0.1"
+  timeout_sec: 15
