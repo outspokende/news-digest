@@ -1,6 +1,9 @@
 news.db
 news.db-journal
+digest.db
+digest.db-journal
 __pycache__/
 *.pyc
 .cache/
 .env
+out/
