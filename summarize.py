@@ -31,8 +31,9 @@ ROOT = Path.home() / ".hermes" / "news-digest"
 DB = ROOT / "news.db"
 PROMPTS = ROOT / "prompts" / "summarize.txt"
 
-API_URL = (os.environ.get("MINIMAX_BASE_URL") or "https://api.minimax.io/v1") + "/chat/completions"
-DEFAULT_MODEL = os.environ.get("MINIMAX_MODEL") or "MiniMax-M2.7"
+API_URL = "https://api.minimax.io/v1/text/chatcompletion_v2"
+DEFAULT_MODEL = "MiniMax-M2.7"
+# MiniMax Free-Tier (minimax.io) — VF AWS endpoint (ai.micro.aws.de.vodafone.com) deprecated Aug 2026 (401 Unauthorized)
 
 
 # --------------------------------------------------------------------------- #

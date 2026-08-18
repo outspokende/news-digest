@@ -55,7 +55,7 @@ SMTP_PORT = int(ENV.get("HETZNER_MAIL_SMTP_PORT", "465"))
 SMTP_USER = ENV.get("HETZNER_MAIL_USER", "mistral@ospn.de")
 SMTP_PASS = ENV.get("HETZNER_MAIL_PASS", "")
 MAIL_FROM = SMTP_USER  # Absender = SMTP-Login
-MAIL_TO = [SMTP_USER]  # Default: an Absender selbst
+MAIL_TO = ["henning.jaeger@gmail.com"]
 
 # ------------------------------------------------------------------ topic meta
 TOPIC_META = {
@@ -67,16 +67,19 @@ TOPIC_META = {
 }
 
 # ------------------------------------------------------------------ DB
-def fetch_articles(min_importance: int = 1, limit: int | None = None) -> list[dict]:
+def fetch_articles(min_importance: int = 1, limit: int | None = None, since: str | None = None) -> list[dict]:
     con = sqlite3.connect(DB)
     con.row_factory = sqlite3.Row
     q = """
         SELECT id, source, url, title, summary_de, published, topic, importance
         FROM articles
         WHERE status='processed' AND importance >= ?
-        ORDER BY importance DESC, published DESC
     """
-    params = [min_importance]
+    params: list = [min_importance]
+    if since:
+        q += " AND processed_at >= ?"
+        params.append(since)
+    q += " ORDER BY importance DESC, published DESC"
     if limit:
         q += " LIMIT ?"
         params.append(limit)
@@ -264,6 +267,7 @@ def main():
     p.add_argument("--min-importance", type=int, default=1, help="nur Artikel mit importance >= N")
     p.add_argument("--limit", type=int, default=None, help="max Anzahl Artikel")
     p.add_argument("--date", default=None, help="Datum für Subject/Output (default: heute)")
+    p.add_argument("--since", default=None, help="Nur Artikel processed seit YYYY-MM-DD (default: alle)")
     p.add_argument("--preview", action="store_true", help="nur HTML-Datei schreiben + Vorschau, kein Versand")
     p.add_argument("--send", action="store_true", help="HTML-Datei schreiben + SMTP-Versand")
     p.add_argument("--to", action="append", default=None, help="Empfänger (mehrfach möglich)")
@@ -286,7 +290,7 @@ def main():
         return
 
     date = dt.date.fromisoformat(args.date) if args.date else dt.date.today()
-    articles = fetch_articles(min_importance=args.min_importance, limit=args.limit)
+    articles = fetch_articles(min_importance=args.min_importance, limit=args.limit, since=args.since)
     if not articles:
         print("Keine Artikel gefunden. Pipeline vorher mit summarize_parallel.py füllen.", file=sys.stderr)
         sys.exit(1)

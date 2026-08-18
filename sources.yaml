@@ -86,7 +86,7 @@ sources:
   - name: Hacker News (AI-tagged, Top 100+)
     url: https://hnrss.org/frontpage?points=100&tags=AI
     topics: [industry, llm, agent]
-    note: AI-tagged only, >=100 Punkte. Test 2026-08-14: 18 saubere AI-Treffer.
+    note: "AI-tagged only, >=100 Punkte. Test 2026-08-14: 18 saubere AI-Treffer."
 
   - name: Lobsters (AI tag)
     url: https://lobste.rs/t/ai.rss
