@@ -3,14 +3,19 @@
 Stand 2026-10-09. Grundlage: Code-Kopie von mistral in diesem Ordner und die Analyse
 in [agents.md](agents.md). Reihenfolge = empfohlene Bearbeitungsreihenfolge.
 
-## Stand der Umsetzung (2026-10-09, nur lokal in diesem Ordner — nicht committet, nicht ausgerollt)
+## Stand der Umsetzung (2026-10-09)
 
-Erledigt und lokal getestet (gegen eine Kopie der `news.db`, Brevo-API simuliert):
-1.1–1.7, 2.6, 3.1, 3.5, 3.6, 3.7, B.2–B.4 (Code), B.6 (Code: `run.py`, Env-Datei, Healthcheck-Ping).
+**Ausgerollt auf Hetzner** (`ospnz@dedi3724.your-server.de`, `~/news-digest`, Cron `0 17 * * *`):
+1.1–1.7, 2.6, 3.1, 3.5, 3.6, 3.7, B.1–B.4, B.6. Kompletter Probelauf ohne Versand auf dem
+Server erfolgreich; Testmail über Brevo zugestellt. Commit auf Branch `hetzner-brevo`, nicht gepusht.
 
-Offen: Phase 0 komplett · 1.8 entfällt mit Abschalten der Hermes-Jobs · 1.9 · Phase 2 außer 2.6
-(wartet auf Entscheidung zur Artikelzahl) · 3.2–3.4, 3.8 · B.1 API-Key + Listen-ID eintragen ·
-B.5 · B.6 Ausrollen auf Hetzner · B.7 · echter Testversand über Brevo.
+**Offen:**
+- Umschaltung abschließen: Marcel in Brevo-Liste 2 eintragen, dann die drei `news-digest-*`-Jobs
+  auf mistral löschen (bis dahin läuft mistral um 17:00 parallel weiter → Henning bekommt beide Mails).
+- 0.1 GitHub-Token rotieren, danach Branch pushen · 0.4 Backup von `~/news-digest/news.db`
+- Totmannschalter: `HEALTHCHECK_URL` in `~/secrets/news-digest.env` eintragen (Code ist vorbereitet)
+- Phase 2 außer 2.6 (wartet auf Entscheidung zur Artikelzahl) · 1.9 · 3.2–3.4, 3.8 · B.5 · B.7
+- Ein Artikel scheitert wiederholt am Parsen der MiniMax-Antwort und bleibt `raw` (→ 3.4)
 
 Leitgedanke: Die Pipeline funktioniert und ist klein. Der Plan baut sie nicht um,
 sondern macht sie erst sicher und korrekt, dann lesenswerter, dann robuster.
