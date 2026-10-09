@@ -3,8 +3,11 @@
 Dokumentation des KI-News-Digest-Jobs, wie er auf **mistral** im Hermes-Agent läuft.
 Stand der Analyse: **2026-10-09** (nur lesend, auf mistral wurde nichts verändert).
 
-> Der Code in diesem Ordner ist seit 2026-10-09 weiterentwickelt (Hetzner + Brevo,
-> siehe [README.md](README.md)). Dieses Dokument beschreibt den Stand, der auf mistral lief.
+> **Historisch.** Seit 2026-10-09 läuft der Digest auf dem Hetzner-Server und versendet
+> über Brevo (siehe [README.md](README.md)). Die drei Hermes-Jobs `news-digest-*` auf mistral
+> wurden am 2026-10-09 gelöscht (Sicherung: `~/.hermes/cron/jobs.json.bak-before-news-digest-removal-20261009`);
+> Code und `news.db` unter `~/.hermes/news-digest/` liegen dort noch unverändert auf dem Stand vom 08.10.
+> Dieses Dokument beschreibt, wie der Job bis dahin auf mistral lief.
 
 ## Kurzfassung
 

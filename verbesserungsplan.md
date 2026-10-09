@@ -9,13 +9,14 @@ in [agents.md](agents.md). Reihenfolge = empfohlene Bearbeitungsreihenfolge.
 1.1–1.7, 2.6, 3.1, 3.5, 3.6, 3.7, B.1–B.4, B.6. Kompletter Probelauf ohne Versand auf dem
 Server erfolgreich; Testmail über Brevo zugestellt. Commit auf Branch `hetzner-brevo`, nicht gepusht.
 
+Umschaltung abgeschlossen: Brevo-Liste 2 hat vier Empfänger, erster Versand an alle am 09.10. 08:43,
+die drei `news-digest-*`-Jobs auf mistral sind gelöscht.
+
 **Offen:**
-- Umschaltung abschließen: Marcel in Brevo-Liste 2 eintragen, dann die drei `news-digest-*`-Jobs
-  auf mistral löschen (bis dahin läuft mistral um 17:00 parallel weiter → Henning bekommt beide Mails).
-- 0.1 GitHub-Token rotieren, danach Branch pushen · 0.4 Backup von `~/news-digest/news.db`
+- 0.1 GitHub-Token rotieren · 0.4 Backup von `~/news-digest/news.db` auf Hetzner
 - Totmannschalter: `HEALTHCHECK_URL` in `~/secrets/news-digest.env` eintragen (Code ist vorbereitet)
 - Phase 2 außer 2.6 (wartet auf Entscheidung zur Artikelzahl) · 1.9 · 3.2–3.4, 3.8 · B.5 · B.7
-- Ein Artikel scheitert wiederholt am Parsen der MiniMax-Antwort und bleibt `raw` (→ 3.4)
+- Aufräumen auf mistral: alter Ordner `~/.hermes/news-digest/` kann weg, sobald Hetzner ein paar Tage stabil läuft
 
 Leitgedanke: Die Pipeline funktioniert und ist klein. Der Plan baut sie nicht um,
 sondern macht sie erst sicher und korrekt, dann lesenswerter, dann robuster.
