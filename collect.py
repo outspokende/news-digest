@@ -2,7 +2,7 @@
 """
 news-digest collect.py
 
-Liest ~/.hermes/news-digest/sources.yaml, fetched RSS/Atom-Feeds,
+Liest sources.yaml, fetched RSS/Atom-Feeds,
 parsed Eintraege, dedupliziert ueber Titel-Hash + URL, schreibt
 in SQLite-DB.
 
@@ -27,34 +27,8 @@ from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
 import feedparser
-import yaml
 
-ROOT = Path.home() / ".hermes" / "news-digest"
-CONFIG = ROOT / "sources.yaml"
-DB = ROOT / "news.db"
-
-
-# --------------------------------------------------------------------------- #
-# Schema
-# --------------------------------------------------------------------------- #
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS articles (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    source        TEXT    NOT NULL,
-    url           TEXT    NOT NULL UNIQUE,
-    title         TEXT    NOT NULL,
-    author        TEXT,
-    summary       TEXT,
-    published     TEXT,                  -- ISO-8601 oder leer
-    topics        TEXT,                  -- comma-separated
-    title_hash    TEXT    NOT NULL,      -- sha256(normalized title) fuer Cross-URL-Dedup
-    fetched_at    TEXT    NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_articles_title_hash ON articles(title_hash);
-CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published);
-CREATE INDEX IF NOT EXISTS idx_articles_source     ON articles(source);
-"""
+from common import CONFIG, DB, load_config, open_db
 
 
 def now_iso() -> str:
@@ -64,13 +38,6 @@ def now_iso() -> str:
 def title_hash(title: str) -> str:
     norm = " ".join((title or "").lower().split())
     return hashlib.sha256(norm.encode("utf-8")).hexdigest()[:16]
-
-
-def open_db() -> sqlite3.Connection:
-    DB.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(DB)
-    con.executescript(SCHEMA)
-    return con
 
 
 # --------------------------------------------------------------------------- #
@@ -137,7 +104,8 @@ def is_fresh(published_iso: str | None, max_age_days: int) -> bool:
 
 
 def upsert_articles(con: sqlite3.Connection, source_name: str,
-                    items: list[dict], dry_run: bool) -> tuple[int, int, int]:
+                    items: list[dict], dry_run: bool,
+                    max_age_days: int = 3) -> tuple[int, int, int]:
     """Returns (new, dup, fresh_rejected)."""
     cur = con.cursor()
     new, dup, rejected = 0, 0, 0
@@ -148,7 +116,7 @@ def upsert_articles(con: sqlite3.Connection, source_name: str,
         if cur.fetchone():
             dup += 1
             continue
-        if not is_fresh(it["published"], max_age_days=3):
+        if not is_fresh(it["published"], max_age_days=max_age_days):
             rejected += 1
             continue
         if dry_run:
@@ -183,9 +151,10 @@ def main() -> int:
         print(f"fehler: config nicht gefunden: {CONFIG}", file=sys.stderr)
         return 2
 
-    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    cfg = load_config()
     sources = cfg.get("sources", [])
     settings = cfg.get("settings", {})
+    max_age_days = int(settings.get("max_age_days", 3))
 
     if args.source:
         sources = [s for s in sources if s["name"] == args.source]
@@ -209,7 +178,7 @@ def main() -> int:
             continue
 
         if con is not None:
-            new, dup, rej = upsert_articles(con, name, items, args.dry_run)
+            new, dup, rej = upsert_articles(con, name, items, args.dry_run, max_age_days)
         else:
             new = len(items)
             dup = rej = 0

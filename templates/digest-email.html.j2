@@ -68,7 +68,7 @@
                 {% endif %}
               </div>
               <div style="font-size:16px; font-weight:600; color:#0f172a; margin-bottom:6px;">
-                <a href="{{ art.url }}" style="color:#0f172a; text-decoration:none;">{{ art.title }}</a>
+                <a href="{{ art.url }}" style="color:#0f172a; text-decoration:none;">{{ art.title_de or art.title }}</a>
               </div>
               {% if art.summary_de %}
               <div style="font-size:14px; color:#374151; line-height:1.55;">{{ art.summary_de }}</div>
@@ -94,7 +94,7 @@
       <td style="padding:24px 32px; background:#f8fafc; border-top:1px solid #e5e7eb;">
         <div style="font-size:12px; color:#64748b; line-height:1.6;">
           <div style="margin-bottom:6px;">
-            Generiert am {{ generated_at }} · Modul 3 (news-digest Pipeline)
+            Generiert am {{ generated_at }}
           </div>
           <div>
             Quellen:
@@ -107,7 +107,7 @@
   </table>
 
   <div style="font-size:11px; color:#94a3b8; padding:16px 32px; max-width:640px;">
-    News-Digest · {{ date_iso }}
+    News-Digest · {{ date_iso }}{% if reply_to %} · <a href="mailto:{{ reply_to }}?subject=unsubscribe-news-digest" style="color:#94a3b8;">Abmelden</a>{% endif %}
   </div>
 
 </td>

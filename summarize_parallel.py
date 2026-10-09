@@ -2,10 +2,16 @@
 """
 news-digest summarize_parallel.py
 
-Parallele Variante von summarize.py mit ThreadPoolExecutor.
-Faedig mit max_workers parallelen MiniMax-Calls.
+Modul 2: liest Artikel mit status='raw', markiert thematische Duplikate,
+ruft MiniMax parallel auf (ThreadPoolExecutor) und schreibt
+summary_de / title_de / topic / importance in die DB.
 
-CLI: identisch zu summarize.py
+CLI:
+    python3 summarize_parallel.py              # alle raw-Artikel
+    python3 summarize_parallel.py --limit 5    # Smoke-Test
+    python3 summarize_parallel.py --dry-run    # keine API-Calls
+
+Vorbedingung: MINIMAX_API_KEY in der Env-Datei (siehe common.env_files).
 """
 from __future__ import annotations
 
@@ -22,6 +28,8 @@ from collections import defaultdict
 
 import requests
 import yaml
+
+from common import DB, PROMPTS, load_env, open_db
 
 # --------------------------------------------------------------------------- #
 # Similarity Dedup — Cross-Source Duplikat-Erkennung
@@ -81,11 +89,12 @@ def jaccard(a: set, b: set) -> float:
     return inter / union if union > 0 else 0.0
 
 
-def find_duplicate_clusters(articles: list[dict], min_jaccard: float = 0.25) -> list[list[dict]]:
+def find_duplicate_clusters(articles: list[dict], min_jaccard: float = 0.35,
+                            min_common: int = 3) -> list[list[dict]]:
     """
     Finde thematische Duplikat-Cluster in einer Artikel-Liste.
     Zwei Artikel sind ein Cluster wenn:
-      (a) sie >= 2 signifikante Titel-Schlüsselwörter teilen, ODER
+      (a) sie >= min_common signifikante Titel-Schlüsselwörter teilen, ODER
       (b) ihre Titel-Keywords Jaccard >= min_jaccard haben.
     Transitiv: wenn A~B und B~C, dann A~B~C (union-find pattern).
     
@@ -116,10 +125,8 @@ def find_duplicate_clusters(articles: list[dict], min_jaccard: float = 0.25) -> 
     for i in range(len(articles)):
         for j in range(i + 1, len(articles)):
             common = keys[i] & keys[j]
-            # Bedingung (a): >= 3 gemeinsame Titel-Schlüsselwörter
-            # ODER (b): Jaccard >= 0.35
             jac = jaccard(keys[i], keys[j])
-            if len(common) >= 3 or jac >= 0.35:
+            if len(common) >= min_common or jac >= min_jaccard:
                 union(i, j)
 
     # Baue Cluster
@@ -134,8 +141,9 @@ def deduplicate_similar(con: sqlite3.Connection) -> dict:
     """
     Prüft alle 'raw' Artikel auf Cross-Source-Duplikate.
     Artikel mit gleichem Core Topic werden zu Clustern zusammengefasst —
-    nur der beste (höchste importance oder zuerst gesetzte) bleibt 'raw',
-    die anderen werden auf status='duplicate' gesetzt.
+    der zuerst gesammelte (kleinste id) bleibt 'raw', die anderen werden
+    auf status='duplicate' gesetzt. importance gibt es hier noch nicht:
+    der Dedup laeuft bewusst VOR den LLM-Calls.
     
     Returns: Statistik-Dict.
     """
@@ -158,12 +166,7 @@ def deduplicate_similar(con: sqlite3.Connection) -> dict:
         if len(cluster) < 2:
             continue  # kein Duplikat
 
-        # Sortiere: wichtigsten zuerst (importance DESC), dann id ASC
-        # Der erste im Sort ist der "Best" — bleibt raw
-        cluster_sorted = sorted(
-            cluster,
-            key=lambda a: (-(a.get("importance") or 0), a["id"])
-        )
+        cluster_sorted = sorted(cluster, key=lambda a: a["id"])
         best = cluster_sorted[0]
         for dupe in cluster_sorted[1:]:
             cur.execute(
@@ -171,8 +174,8 @@ def deduplicate_similar(con: sqlite3.Connection) -> dict:
                 (dupe["id"],)
             )
             dupes_marked += 1
-            print(f"  DUPE: [{best.get('importance') or '?'}] '{best['title'][:60]}' "
-                  f"<- '{dupe['title'][:60]}'", file=sys.stderr)
+            print(f"  DUPE: '{best['title'][:60]}' <- '{dupe['title'][:60]}'",
+                  file=sys.stderr)
 
     con.commit()
     return {
@@ -180,9 +183,6 @@ def deduplicate_similar(con: sqlite3.Connection) -> dict:
         "duplicates_marked": dupes_marked,
     }
 
-ROOT = Path.home() / ".hermes" / "news-digest"
-DB = ROOT / "news.db"
-PROMPTS = ROOT / "prompts" / "summarize.txt"
 API_URL = "https://api.minimax.io/v1/text/chatcompletion_v2"
 DEFAULT_MODEL = "MiniMax-M2.7"
 # MiniMax Free-Tier (minimax.io) — VF AWS endpoint deprecated Aug 2026
@@ -235,8 +235,17 @@ def call_MiniMax(api_key: str, system: str, user: str, model: str) -> dict:
 
 def parse_response(resp: dict) -> dict | None:
     try:
-        content = resp["choices"][0]["message"]["content"].strip()
-    except (KeyError, IndexError):
+        choices = resp.get("choices")
+        if not choices or choices[0] is None:
+            return None
+        msg = choices[0].get("message")
+        if msg is None:
+            return None
+        content = msg.get("content")
+        if content is None:
+            return None
+        content = content.strip()
+    except (KeyError, IndexError, TypeError):
         return None
     m = re.search(r"\{.*\}", content, flags=re.DOTALL)
     if not m:
@@ -245,9 +254,11 @@ def parse_response(resp: dict) -> dict | None:
         d = json.loads(m.group(0))
     except json.JSONDecodeError:
         return None
-    if not all(k in d for k in ("summary_de", "topic", "importance")):
+    if not all(k in d for k in ("summary_de", "title_de", "topic", "importance")):
         return None
     if not isinstance(d["summary_de"], str) or len(d["summary_de"]) < 5:
+        return None
+    if not isinstance(d["title_de"], str) or len(d["title_de"]) < 3:
         return None
     if d["topic"] not in {"coding-agent", "llm", "stt_tts",
                           "audio", "research", "industry"}:
@@ -280,14 +291,14 @@ def main() -> int:
     ap.add_argument("--workers", type=int, default=MAX_WORKERS)
     args = ap.parse_args()
 
+    load_env()
     api_key = os.environ.get("MINIMAX_API_KEY")
     if not api_key and not args.dry_run:
         print("fehler: MINIMAX_API_KEY nicht in env", file=sys.stderr)
         return 2
 
     system, user_tpl = load_prompts()
-    con = sqlite3.connect(DB)
-    con.row_factory = sqlite3.Row
+    con = open_db()
 
     q = "SELECT * FROM articles WHERE status IS NULL OR status='raw' ORDER BY published DESC"
     if args.limit:
@@ -331,10 +342,10 @@ def main() -> int:
             art_id, parsed, err = fut.result()
             if parsed:
                 con.execute("""
-                    UPDATE articles SET summary_de=?, topic=?, importance=?,
+                    UPDATE articles SET summary_de=?, title_de=?, topic=?, importance=?,
                                         status='processed', processed_at=CURRENT_TIMESTAMP
                     WHERE id=?
-                """, (parsed["summary_de"], parsed["topic"], parsed["importance"], art_id))
+                """, (parsed["summary_de"], parsed["title_de"], parsed["topic"], parsed["importance"], art_id))
                 processed += 1
             else:
                 errors += 1

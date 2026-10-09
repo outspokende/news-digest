@@ -1,6 +1,6 @@
 # AI-News-Digest Quellen
 # Topic-Tags: agent | llm | stt_tts | audio | research | industry
-# Letzter Live-Test: 2026-08-13, alle 22 Quellen mit HTTP-200 verifiziert
+# 17 aktive Quellen. Letzter Live-Test aller Feeds: 2026-08-13
 # wo nicht: Quelle auskommentiert mit # DEAD
 
 sources:
@@ -84,9 +84,10 @@ sources:
   # HN-Frontpage lieferte ~45% Non-AI (IBM-Birthday, Sardinen, Eclipsen, Common Lisp).
   # Filter auf AI-tag + Frontpage + >=100 Punkte liefert deutlich sauberere Treffer.
   - name: Hacker News (AI-tagged, Top 100+)
-    url: https://hnrss.org/frontpage?points=100&tags=AI
+    # frontpage?points=100&tags=AI liefert seit 2026-10-03 HTTP 502 (tags-Parameter).
+    url: https://hnrss.org/newest?q=AI&points=100
     topics: [industry, llm, agent]
-    note: "AI-tagged only, >=100 Punkte. Test 2026-08-14: 18 saubere AI-Treffer."
+    note: "Volltextsuche 'AI', >=100 Punkte. Trefferqualitaet nach Umstellung beobachten."
 
   - name: Lobsters (AI tag)
     url: https://lobste.rs/t/ai.rss
@@ -131,3 +132,14 @@ settings:
   max_items_per_feed: 20   # Cap pro Feed (verhindert arXiv-Flut)
   user_agent: "Mozilla/5.0 (X11; Linux x86_64) NewsDigestBot/0.1"
   timeout_sec: 15
+
+# Versand (Modul 3). Secrets (BREVO_API_KEY, MINIMAX_API_KEY) stehen NICHT hier,
+# sondern in der Env-Datei — siehe README.
+mail:
+  sender_name: "Daily AI News"
+  sender_email: "ai-news@outspoken.de"
+  reply_to: "henning.jaeger@gmail.com"
+  brevo_list_id: 2         # Brevo-Kontaktliste; Empfänger werden dort gepflegt
+  tag: "news-digest"       # Filter im Brevo-Transaktionslog
+  min_importance: 1        # 1 = alles; 3 = nur ★3 und höher
+  max_age_days: 7          # Sicherheitsnetz: nie Artikel versenden, die älter verarbeitet wurden
