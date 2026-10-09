@@ -168,7 +168,10 @@ def main() -> int:
     for src in sources:
         name = src["name"]
         try:
-            items = fetch_feed(src, settings)
+            try:
+                items = fetch_feed(src, settings)
+            except Exception:
+                items = fetch_feed(src, settings)  # ein Retry: Timeouts sind meist flüchtig
         except Exception as ex:
             totals["errors"] += 1
             totals["feeds"].append({
